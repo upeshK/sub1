@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:oauth2-provider="http://www.mulesoft.org/schema/mule/oauth2-provider" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/oauth2-provider http://www.mulesoft.org/schema/mule/oauth2-provider/current/mule-oauth2-provider.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <oauth2-provider:config name="OAuth_provider_module" doc:name="OAuth provider module"/>
+    <flow name="mainFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/munit" doc:name="HTTP"/>
+        <set-payload value="#[message.inboundProperties['http.query.params']['url']]" doc:name="Real Set Payload"/>
+        <logger message="Payload &gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;#[payload]&lt;&lt;&lt;&lt;&lt;&lt;&lt;" level="INFO" doc:name="Logger"/>
+        <flow-ref name="classiFlow" doc:name="Flow Reference"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars['routingId'].equals('ASA')]">
+                <set-payload value="ASA Payload" doc:name="Set Payload"/>
+            </when>
+            <otherwise>
+            	<set-payload value="OFA Payload" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+        <logger message="Message&gt;&gt;&gt;&gt;&gt;&gt;&gt;#[message]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="classiFlow">
+        <choice doc:name="Choice">
+        <when expression="#[payload.equals('createReturn')]">
+        <flow-ref name="ASA_Routing_Sub_Flow" doc:name="Flow Reference"></flow-ref>
+        </when>
+         <otherwise>
+         <flow-ref name="OFA_Routing_Sub_Flow" doc:name="Flow Reference"/>
+         </otherwise>
+        </choice>
+    </flow>
+    <sub-flow name="ASA_Routing_Sub_Flow">
+        <set-variable variableName="routingId" value="#['ASA']" doc:name="Variable"/>
+    </sub-flow>
+    <sub-flow name="OFA_Routing_Sub_Flow">
+        <set-variable variableName="routingId" value="#['OFA']" doc:name="Variable"/>
+    </sub-flow>
+</mule>
